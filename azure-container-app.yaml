@@ -1,0 +1,42 @@
+name: content-gpt-app
+location: eastus
+resourceGroup: content-gpt-rg
+properties:
+  managedEnvironmentId: /subscriptions/b127d0c6-3b4e-48e9-b991-dc8522af2d0f/resourceGroups/content-gpt-rg/providers/Microsoft.App/managedEnvironments/content-gpt-env
+  configuration:
+    ingress:
+      external: true
+      targetPort: 80
+      transport: http
+    secrets:
+      - name: azure-openai-key
+        keyVaultReference:
+          secretIdentifier: https://content-gpt-kv.vault.azure.net/secrets/azure-openai-key
+      - name: azure-openai-endpoint
+        keyVaultReference:
+          secretIdentifier: https://content-gpt-kv.vault.azure.net/secrets/azure-openai-endpoint
+      - name: azure-openai-deployment
+        keyVaultReference:
+          secretIdentifier: https://content-gpt-kv.vault.azure.net/secrets/azure-openai-deployment
+  template:
+    containers:
+      - name: content-gpt
+        image: contentgpt.azurecr.io/content-gpt:latest
+        resources:
+          cpu: 0.5
+          memory: 1Gi
+        env:
+          - name: VITE_AZURE_OPENAI_KEY
+            secretRef: azure-openai-key
+          - name: VITE_AZURE_OPENAI_ENDPOINT
+            secretRef: azure-openai-endpoint
+          - name: VITE_AZURE_OPENAI_DEPLOYMENT
+            secretRef: azure-openai-deployment
+    scale:
+      minReplicas: 1
+      maxReplicas: 10
+      rules:
+        - name: http-rule
+          http:
+            metadata:
+              concurrentRequests: "100" 
